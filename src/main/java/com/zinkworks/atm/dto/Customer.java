@@ -51,4 +51,10 @@ public class Customer {
 		this.overdraft = overdraft;
 	}
 
+	@Override
+	public String toString() {
+		return "Customer [accountNumber=" + accountNumber + ", pin=" + pin + ", balance=" + balance + ", overdraft="
+				+ overdraft + "]";
+	}
+
 }
