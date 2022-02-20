@@ -1,8 +1,16 @@
 package com.zinkworks.atm.utils;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
+import com.zinkworks.atm.dto.Atm;
 import com.zinkworks.atm.dto.Customer;
+import com.zinkworks.atm.repositories.AtmRepository;
 
 public class AtmUtils {
+	
+	
+	@Autowired
+	AtmRepository atmRepository;
 
 	public boolean validateAccount(Customer customer, int inputPin) {
 
@@ -12,5 +20,36 @@ public class AtmUtils {
 			return false;
 		}
 	}
-	
+
+	public boolean validateCustomerBalance(Customer customer, double withDrawalAmount)  {
+
+		double customerBalance = customer.getBalance();
+		double overDraft = customer.getOverdraft();
+
+		if (customerBalance + overDraft >= withDrawalAmount) {
+			return true;
+		}
+
+		return false;
+	}
+
+	public boolean validateAtmAmount(Atm atm, double amount) {
+
+		double notes_5 = atm.getNotes_5();
+		double notes_10 = atm.getNotes_10();
+		double notes_20 = atm.getNotes_20();
+		double notes_50 = atm.getNotes_50();
+
+		double atmAmount = notes_5*5 + notes_10*10 + notes_20*20 + notes_50*50;
+		
+		System.out.println("atmAmount : " + atmAmount );
+		
+		if (atmAmount >= amount) {
+			return true;
+		}
+		
+		return false;
+	}
+
+
 }
