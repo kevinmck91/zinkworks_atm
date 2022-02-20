@@ -7,11 +7,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.sun.media.jfxmedia.logging.Logger;
 import com.zinkworks.atm.dto.Atm;
 import com.zinkworks.atm.dto.Customer;
 import com.zinkworks.atm.dto.RequestBalance;
 import com.zinkworks.atm.dto.RequestWithdrawal;
+import com.zinkworks.atm.exceptions.AccountNotFoundException;
+import com.zinkworks.atm.exceptions.AtmAmountException;
+import com.zinkworks.atm.exceptions.CustomerBalanceException;
+import com.zinkworks.atm.exceptions.IncorrectPinException;
 import com.zinkworks.atm.repositories.AtmRepository;
 import com.zinkworks.atm.repositories.CustomerRepository;
 import com.zinkworks.atm.utils.AtmUtils;
@@ -43,12 +46,10 @@ public class AtmController {
 	@PostMapping("balance/")
 	public String checkBalance(@RequestBody RequestBalance requestBalance) {
 
-		try {
-
 			List<Customer> customerList = customerRepository.findByAccountNumber(requestBalance.getAccountNumber());
 
 			if (customerList.isEmpty()) {
-				return "Account does not exist";
+				throw new AccountNotFoundException("Account not found - " + requestBalance.getAccountNumber());
 			}
 
 			Customer customer = customerList.get(0);
@@ -61,12 +62,8 @@ public class AtmController {
 			if (pinValid) {
 				return "Your Balance is €" + customer.getBalance();
 			} else {
-				return "Pin is incorrect";
+				throw new IncorrectPinException("The pin you have entered is incorrect");
 			}
-
-		} catch (Exception e) {
-			return "Error accessing account";
-		}
 
 	}
 	
@@ -84,47 +81,49 @@ public class AtmController {
 	@PostMapping("withdrawal/")
 	public String withdrawal(@RequestBody RequestWithdrawal requestWithdrawal) {
 
-		try {
+		// Get the Customer and Atm from the database
+		List<Customer> customerList = customerRepository.findByAccountNumber(requestWithdrawal.getAccountNumber());
+		List<Atm> atmList = atmRepository.findAll();
 
-			// Get the Customer and Atm from the database
-			List<Customer> customerList = customerRepository.findByAccountNumber(requestWithdrawal.getAccountNumber());
-			List<Atm> atmList = atmRepository.findAll();
-			
-			Customer customer = customerList.get(0);
-			atm = atmList.get(0);
-			
-			// Set the Atm contents
-			atm.setNotes_5(atmList.get(0).getNotes_5());
-			atm.setNotes_10(atmList.get(0).getNotes_10());
-			atm.setNotes_20(atmList.get(0).getNotes_20());
-			atm.setNotes_50(atmList.get(0).getNotes_50());
-			
-			if (customerList.isEmpty()) {
-				return "Account does not exist";
-			}
-
-			int inputAccountNumber = requestWithdrawal.getAccountNumber();
-			int inputPin = requestWithdrawal.getPin();
-
-			// Validate if the transaction can proceed
-			boolean pinValid = AtmUtils.validateAccount(customer, inputPin);
-			boolean customerBalanceValid = AtmUtils.validateCustomerBalance(customer, requestWithdrawal.getAmount());
-			boolean atmAmountValid = AtmUtils.validateAtmAmount(atm, requestWithdrawal.getAmount());
-
-			if (pinValid && customerBalanceValid && atmAmountValid) {
-				
-				debitAccount(customer, atm, requestWithdrawal.getAmount());
-				//Debit the ATM
-				
-				return "Debit account and atm";
-
-			} else {
-				return "Transaction Cannot Procees";
-			}
-
-		} catch (Exception e) {
-			return "Error accessing account";
+		if (customerList.isEmpty()) {
+			throw new AccountNotFoundException("Account not found - " + requestWithdrawal.getAccountNumber());
 		}
+		
+		Customer customer = customerList.get(0);
+		atm = atmList.get(0);
+
+		// Set the Atm contents for use in the program
+		atm.setNotes_5(atmList.get(0).getNotes_5());
+		atm.setNotes_10(atmList.get(0).getNotes_10());
+		atm.setNotes_20(atmList.get(0).getNotes_20());
+		atm.setNotes_50(atmList.get(0).getNotes_50());
+
+		if (customerList.isEmpty()) {
+			throw new AccountNotFoundException("Account not found - " + requestWithdrawal.getAccountNumber());
+		}
+
+		int inputAccountNumber = requestWithdrawal.getAccountNumber();
+		int inputPin = requestWithdrawal.getPin();
+
+		// Validate if the transaction can proceed
+		boolean pinValid = AtmUtils.validateAccount(customer, inputPin);
+		boolean customerBalanceValid = AtmUtils.validateCustomerBalance(customer, requestWithdrawal.getAmount());
+		boolean atmAmountValid = AtmUtils.validateAtmAmount(atm, requestWithdrawal.getAmount());
+
+		if (!pinValid) {
+			throw new IncorrectPinException("The pin you have entered is incorrect");
+		} else if (!customerBalanceValid) {
+			throw new CustomerBalanceException("You have insufficient funds for this transaction");
+		} else if (!atmAmountValid) {
+			throw new AtmAmountException("The ATM has insufficient funds for this transaction");
+		} else {
+			debitAccount(customer, atm, requestWithdrawal.getAmount());
+			// Debit the ATM;
+			// return the completed object
+			return null;
+
+		}
+		
 
 	}
 	
