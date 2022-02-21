@@ -28,10 +28,10 @@ public class AtmController {
 
 	@Autowired
 	CustomerRepository customerRepository;
-	
+
 	@Autowired
 	AtmRepository atmRepository;
-	
+
 	Atm atm = new Atm();
 	AtmUtils AtmUtils = new AtmUtils();
 	TransactionDetails transactionDetails = new TransactionDetails();
@@ -41,10 +41,9 @@ public class AtmController {
 	 * @param requestBalance
 	 * @return String
 	 * 
-	 *         Method takes in JSON with customer Account Number & Pin. 
-	 *         Retrieves that customer from the database.
-	 *         Validate the Pin number for customer.
-	 *         Outputs the balance for that customer
+	 *         Method takes in JSON with customer Account Number & Pin. Retrieves
+	 *         that customer from the database. Validate the Pin number for
+	 *         customer. Outputs the balance for that customer
 	 * 
 	 */
 
@@ -52,7 +51,7 @@ public class AtmController {
 	public BalanceDetails checkBalance(@RequestBody RequestBalance requestBalance) {
 
 		BalanceDetails balanceDetails = new BalanceDetails();
-	
+
 		List<Customer> customerList = customerRepository.findByAccountNumber(requestBalance.getAccountNumber());
 
 		if (customerList.isEmpty()) {
@@ -75,18 +74,18 @@ public class AtmController {
 		}
 
 	}
-	
+
 	/**
 	 * 
 	 * @param requestWithdrawal
 	 * @return String
 	 * 
-	 *         Method takes in JSON with customer Account Number, Pin & amount to be withdrawn. 
-	 *         Retrieves the customer and the Atm data from the database.
+	 *         Method takes in JSON with customer Account Number, Pin & amount to be
+	 *         withdrawn. Retrieves the customer and the Atm data from the database.
 	 *         Validate the Pin, the customers funds and the Atm funds.
 	 * 
 	 */
-	
+
 	@PostMapping("withdrawal/")
 	public TransactionDetails withdrawal(@RequestBody RequestWithdrawal requestWithdrawal) {
 
@@ -97,7 +96,7 @@ public class AtmController {
 		if (customerList.isEmpty()) {
 			throw new AccountNotFoundException("Account not found - " + requestWithdrawal.getAccountNumber());
 		}
-		
+
 		Customer customer = customerList.get(0);
 		atm = atmList.get(0);
 
@@ -122,34 +121,44 @@ public class AtmController {
 		} else if (!atmAmountValid) {
 			throw new AtmAmountException("The ATM has insufficient funds for this transaction");
 		} else {
-			
-			debitAccount(customer, atm, requestWithdrawal.getAmount());
+
+			// Proceed with transaction
+			debitAccount(customer, requestWithdrawal.getAmount());
 			CashOutputDetails cashOutputDetails = debitAtm(atm, requestWithdrawal.getAmount()); // Debit the ATM;
-			
+
+			// Generate details object that will be returned to the user
 			transactionDetails.setAccountNumber(requestWithdrawal.getAccountNumber());
 			transactionDetails.setWithdrawalAmount(requestWithdrawal.getAmount());
-			transactionDetails.setBalanceDetails(checkBalance(new RequestBalance(requestWithdrawal.getAccountNumber(), requestWithdrawal.getPin())));
+			transactionDetails.setBalanceDetails(
+					checkBalance(new RequestBalance(requestWithdrawal.getAccountNumber(), requestWithdrawal.getPin())));
 			transactionDetails.setMessage("Transaction Successful");
 			transactionDetails.setCashOutputDetails(cashOutputDetails);
-			
+
 			return transactionDetails;
 
 		}
-		
 
 	}
-	
+
+	/**
+	 * 
+	 * @return Atm
+	 * 
+	 *         Method queries the database and returns the Atm details
+	 * 
+	 */
+
 	@GetMapping("atm/")
 	public Atm atmDetails() {
-		
+
 		List<Atm> atmList = atmRepository.findAll();
 
 		return atmList.get(0);
 	}
-	
-	
 
-	private void debitAccount(Customer customer, Atm atm, double amount) {
+
+
+	private void debitAccount(Customer customer, double amount) {
 		
 		double balance = customer.getBalance();
 		double overdraft = customer.getOverdraft();
@@ -239,6 +248,6 @@ public class AtmController {
 	}
 
 	
-
+	
 
 }

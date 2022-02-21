@@ -18,6 +18,7 @@ public class AtmUtils {
 		}
 	}
 
+	// Validate that the customer has sufficient balance for the transaction
 	public boolean validateCustomerBalance(Customer customer, double withDrawalAmount)  {
 
 		double customerBalance = customer.getBalance();
@@ -30,6 +31,7 @@ public class AtmUtils {
 		return false;
 	}
 
+	// Validate that the Atm has sufficient balance for the transaction
 	public boolean validateAtmAmount(Atm atm, double amount) {
 
 		double notes_5 = atm.getNotes_5();
@@ -39,8 +41,6 @@ public class AtmUtils {
 
 		double atmAmount = notes_5*5 + notes_10*10 + notes_20*20 + notes_50*50;
 		
-		System.out.println("atmAmount : " + atmAmount );
-		
 		if (atmAmount >= amount) {
 			return true;
 		}
@@ -48,7 +48,7 @@ public class AtmUtils {
 		return false;
 	}
 	
-
+	
 
 
 }
