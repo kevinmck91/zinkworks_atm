@@ -5,13 +5,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.zinkworks.atm.dto.Atm;
 import com.zinkworks.atm.dto.Customer;
 import com.zinkworks.atm.repositories.AtmRepository;
+import com.zinkworks.atm.responses.CashOutputDetails;
 
 public class AtmUtils {
 	
-	
-	@Autowired
-	AtmRepository atmRepository;
-
 	public boolean validateAccount(Customer customer, int inputPin) {
 
 		if (customer.getPin() == inputPin) {
@@ -50,6 +47,8 @@ public class AtmUtils {
 		
 		return false;
 	}
+	
+
 
 
 }
